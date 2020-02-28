@@ -1,4 +1,8 @@
+import 'dart:math';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() => runApp(MyApp());
 
@@ -44,17 +48,38 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  Future<FirebaseUser> _handleSignIn() async {
+    GoogleSignInAccount googleCurrentUser = _googleSignIn.currentUser;
+    try {
+      if (googleCurrentUser == null)
+        googleCurrentUser = await _googleSignIn.signInSilently();
+      if (googleCurrentUser == null)
+        googleCurrentUser = await _googleSignIn.signIn();
+      if (googleCurrentUser == null) return null;
+
+      GoogleSignInAuthentication googleAuth =
+          await googleCurrentUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.getCredential(
+          idToken: googleAuth.idToken, accessToken: googleAuth.accessToken);
+      final FirebaseUser user =
+          (await _auth.signInWithCredential(credential)).user;
+      print("signed in " + user.displayName);
+
+      return user;
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  void transitionNextPage(FirebaseUser user) {
+    if (user == null) return;
+
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => NextPage(userData: user)));
   }
 
   @override
@@ -91,21 +116,86 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
+            RaisedButton(
+              child: Text('Sign in Google'),
+              onPressed: () {
+                _handleSignIn()
+                    .then((FirebaseUser user) => transitionNextPage(user))
+                    .catchError((e) => print(e));
+              },
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class NextPage extends StatefulWidget {
+  FirebaseUser userData;
+
+  NextPage({Key key, this.userData}) : super(key: key);
+
+  @override
+  _NextPageState createState() => _NextPageState(userData);
+}
+
+class _NextPageState extends State<NextPage> {
+  FirebaseUser userData;
+  String name = "";
+  String email;
+  String photoUrl;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  _NextPageState(FirebaseUser userData) {
+    this.userData = userData;
+    this.name = userData.displayName;
+    this.email = userData.email;
+    this.photoUrl = userData.photoUrl;
+  }
+
+  Future<void> _handleSignOut() async {
+    await FirebaseAuth.instance.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      print(e);
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("ユーザ情報表示"),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Image.network(this.photoUrl),
+            Text(
+              this.name,
+              style: TextStyle(
+                fontSize: 24,
+              ),
+            ),
+            Text(
+              this.email,
+              style: TextStyle(
+                fontSize: 24
+              ),
+            ),
+            RaisedButton(
+              child: Text('Sign Out Google'),
+              onPressed: () {
+                _handleSignOut().catchError((e) => print(e));
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
