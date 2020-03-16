@@ -4,14 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(BookSharingApp());
 
-class MyApp extends StatelessWidget {
+class BookSharingApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter BookSharing',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'BookSharingApp'),
     );
   }
 }
@@ -48,38 +48,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<FirebaseUser> _handleSignIn() async {
-    GoogleSignInAccount googleCurrentUser = _googleSignIn.currentUser;
-    try {
-      if (googleCurrentUser == null)
-        googleCurrentUser = await _googleSignIn.signInSilently();
-      if (googleCurrentUser == null)
-        googleCurrentUser = await _googleSignIn.signIn();
-      if (googleCurrentUser == null) return null;
+  String _text = '';
 
-      GoogleSignInAuthentication googleAuth =
-          await googleCurrentUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.getCredential(
-          idToken: googleAuth.idToken, accessToken: googleAuth.accessToken);
-      final FirebaseUser user =
-          (await _auth.signInWithCredential(credential)).user;
-      print("signed in " + user.displayName);
-
-      return user;
-    } catch (e) {
-      print(e);
-      return null;
-    }
-  }
-
-  void transitionNextPage(FirebaseUser user) {
-    if (user == null) return;
-
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => NextPage(userData: user)));
+  void _handleText(String e) {
+    setState(() {
+      _text = e;
+    });
   }
 
   @override
@@ -96,38 +71,68 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            RaisedButton(
-              child: Text('Sign in Google'),
-              onPressed: () {
-                _handleSignIn()
-                    .then((FirebaseUser user) => transitionNextPage(user))
-                    .catchError((e) => print(e));
-              },
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(50.0),
+      child: Column(
+        children: <Widget>[
+          Text(
+            "ID",
+            style: TextStyle(
+                color: Colors.blueAccent,
+                fontSize: 30.0,
+                fontWeight: FontWeight.w500
             ),
-          ],
-        ),
+          ),
+          new TextField(
+            enabled: true,
+            // 入力数
+            maxLength: 10,
+            maxLengthEnforced: false,
+            style: TextStyle(color: Colors.red),
+            obscureText: false,
+            maxLines: 1,
+            decoration: const InputDecoration(
+              hintText: 'IDを入力してください',
+              labelText: 'ID',
+            ),
+          ),
+          Text(
+            "PASSWORD",
+            style: TextStyle(
+                color: Colors.blueAccent,
+                fontSize: 30.0,
+                fontWeight: FontWeight.w500
+            ),
+          ),
+          new TextField(
+            enabled: true,
+            // 入力数
+            maxLength: 10,
+            maxLengthEnforced: false,
+            style: TextStyle(color: Colors.red),
+            obscureText: true,
+            maxLines: 1,
+            decoration: const InputDecoration(
+              hintText: 'パスワードを入力してください',
+              labelText: 'パスワード',
+            ),
+          ),
+          RaisedButton(
+            onPressed: _login,
+            child: Text('Login'),
+          ),
+        ],
       ),
     );
+  }
+
+  void _login() {
+    // TODO::ログイン機能を実装
   }
 }
 
@@ -184,7 +189,7 @@ class _NextPageState extends State<NextPage> {
             Text(
               this.email,
               style: TextStyle(
-                fontSize: 24
+                  fontSize: 24
               ),
             ),
             RaisedButton(
