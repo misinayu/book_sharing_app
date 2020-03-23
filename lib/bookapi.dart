@@ -45,10 +45,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _text = '';
-  String _id = '';
-  String _password = '';
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -138,6 +134,9 @@ class _ChangeFormState extends State<ChangeForm> {
   String _id = '';
   String _password = '';
 
+  bool _id_ok = false;
+  bool _pw_ok = false;
+
   Widget build(BuildContext context) {
     return Form(
         key: _formKey,
@@ -175,14 +174,18 @@ class _ChangeFormState extends State<ChangeForm> {
                   },
                 ),
                 RaisedButton(
-                  onPressed: _submission,
-                  child: Text('保存'),
-                )
+                  onPressed: _signIn,
+                  child: Text('Sign In'),
+                ),
+                RaisedButton(
+                  onPressed: _signUp,
+                  child: Text('Sign Up'),
+                ),
               ],
             )));
   }
 
-  void _submission() {
+  void _signIn() {
 //    if (this._formKey.currentState.validate()) {
 //      this._formKey.currentState.save();
 //      Scaffold
@@ -191,91 +194,73 @@ class _ChangeFormState extends State<ChangeForm> {
 //      print(this._id);
 //      print(this._password);
 //    }
-    // TODO::ログイン機能
-    getData(this._id);
 
+    // TODO::ログイン機能
     if (this._formKey.currentState.validate()) {
       this._formKey.currentState.save();
+      String saveId = this._id;
+      String savePw = this._password;
+      Map data = new Map<String, dynamic>.from({
+        "id": saveId,
+        "pw": savePw,
+      });
+      // firestoreから取得
+      Future test = getData('acount', saveId);
+      test.then((context) => checkAcount(context, saveId, savePw));
+
+      if (_id_ok && _pw_ok) {
+        // TODO::login成功していたら別画面に遷移
+        print('Login Success!!');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SearchBook()),
+        );
+      }
     }
   }
 
-  Future getData(String documentId) async {
-    DocumentSnapshot documentSnapshot =
-        await Firestore.instance.collection('acount').document(this._id).get();
-    Map record = documentSnapshot.data;
-    if (record['id'] == this._id) {
-      return true;
-    } else {
-      return false;
-    }
+  void _signUp() {
+    // TODO::Firestoreにアカウント登録する
+    // firestoreに登録
+//      Firestore.instance.collection('acount').document(saveId).setData(data);
+    // firestoreから削除
+//      Firestore.instance.collection('acount').document(saveId).delete();
+  }
+
+  Future getData(String collection, String documentId) async {
+    DocumentSnapshot docSnapshot = await Firestore.instance
+        .collection(collection)
+        .document(documentId)
+        .get();
+    return docSnapshot.data;
+  }
+
+  void checkAcount(Map doc, String id, String password) {
+    _id_ok = false;
+    _pw_ok = false;
+    doc.forEach((key, value) => {
+          if (key == 'id')
+            {
+              if (value == id) {_id_ok = true}
+            }
+          else if (key == 'pw')
+            {
+              if (value == password) {_pw_ok = true}
+            }
+        });
   }
 }
 
-//class NextPage extends StatefulWidget {
-//  FirebaseUser userData;
-//
-//  NextPage({Key key, this.userData}) : super(key: key);
-//
-//  @override
-//  _NextPageState createState() => _NextPageState(userData);
-//}
-//
-//class _NextPageState extends State<NextPage> {
-//  FirebaseUser userData;
-//  String name = "";
-//  String email;
-//  String photoUrl;
-//  final GoogleSignIn _googleSignIn = GoogleSignIn();
-//
-//  _NextPageState(FirebaseUser userData) {
-//    this.userData = userData;
-//    this.name = userData.displayName;
-//    this.email = userData.email;
-//    this.photoUrl = userData.photoUrl;
-//  }
-//
-//  Future<void> _handleSignOut() async {
-//    await FirebaseAuth.instance.signOut();
-//    try {
-//      await _googleSignIn.signOut();
-//    } catch (e) {
-//      print(e);
-//    }
-//    Navigator.pop(context);
-//  }
-//
-//  @override
-//  Widget build(BuildContext context) {
-//    return Scaffold(
-//      appBar: AppBar(
-//        title: Text("ユーザ情報表示"),
-//      ),
-//      body: Center(
-//        child: Column(
-//          mainAxisAlignment: MainAxisAlignment.center,
-//          children: <Widget>[
-//            Image.network(this.photoUrl),
-//            Text(
-//              this.name,
-//              style: TextStyle(
-//                fontSize: 24,
-//              ),
-//            ),
-//            Text(
-//              this.email,
-//              style: TextStyle(
-//                  fontSize: 24
-//              ),
-//            ),
-//            RaisedButton(
-//              child: Text('Sign Out Google'),
-//              onPressed: () {
-//                _handleSignOut().catchError((e) => print(e));
-//              },
-//            ),
-//          ],
-//        ),
-//      ),
-//    );
-//  }
-//}
+class SearchBook extends StatefulWidget {
+  @override
+  _SearchBookState createState() => _SearchBookState();
+}
+
+class _SearchBookState extends State<SearchBook> {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return null;
+  }
+
+}
