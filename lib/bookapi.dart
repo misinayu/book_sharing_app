@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import 'book_list.dart';
+
 void main() => runApp(BookSharingApp());
 
 class BookSharingApp extends StatelessWidget {
@@ -186,16 +188,7 @@ class _ChangeFormState extends State<ChangeForm> {
   }
 
   void _signIn() {
-//    if (this._formKey.currentState.validate()) {
-//      this._formKey.currentState.save();
-//      Scaffold
-//          .of(context)
-//          .showSnackBar(SnackBar(content: Text('Processing Data')));
-//      print(this._id);
-//      print(this._password);
-//    }
-
-    // TODO::ログイン機能
+    // ログイン機能
     if (this._formKey.currentState.validate()) {
       this._formKey.currentState.save();
       String saveId = this._id;
@@ -209,7 +202,7 @@ class _ChangeFormState extends State<ChangeForm> {
       test.then((context) => checkAcount(context, saveId, savePw));
 
       if (_id_ok && _pw_ok) {
-        // TODO::login成功していたら別画面に遷移
+        // login成功していたら別画面に遷移
         print('Login Success!!');
         Navigator.push(
           context,
@@ -238,6 +231,8 @@ class _ChangeFormState extends State<ChangeForm> {
   void checkAcount(Map doc, String id, String password) {
     _id_ok = false;
     _pw_ok = false;
+    print(id);
+    print(password);
     doc.forEach((key, value) => {
           if (key == 'id')
             {
@@ -257,10 +252,62 @@ class SearchBook extends StatefulWidget {
 }
 
 class _SearchBookState extends State<SearchBook> {
+  final _formkey = GlobalKey<FormState>();
+
+  String _bookName = '';
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return null;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('書籍検索'),
+      ),
+      body: _buildSearchBody(context),
+    );
   }
 
+  Widget _buildSearchBody(BuildContext context) {
+    return Form(
+        key: _formkey,
+        child: Container(
+          padding: const EdgeInsets.all(50.0),
+          child: Column(
+            children: <Widget>[
+              new TextFormField(
+                enabled: true,
+                maxLength: 20,
+                maxLengthEnforced: false,
+                obscureText: false,
+                autovalidate: false,
+                decoration: const InputDecoration(
+                  hintText: '検索したい本の名前を入力してください',
+                  labelText: '書籍名 *',
+                ),
+                validator: (String value) {
+                  return value.isEmpty ? '必須入力です' : null;
+                },
+                onSaved: (String value) {
+                  this._bookName = value;
+                },
+              ),
+              RaisedButton(
+                onPressed: _searchBook,
+                child: Text('検索'),
+              ),
+            ],
+          ),
+        ));
+  }
+
+  void _searchBook() {
+    if (this._formkey.currentState.validate()) {
+      this._formkey.currentState.save();
+//      Scaffold.of(context).showSnackBar(SnackBar(content: Text('検索しました')));
+      print(this._bookName);
+      Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => BookFinderPage()),
+      );
+    }
+  }
 }
