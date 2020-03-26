@@ -213,11 +213,21 @@ class _ChangeFormState extends State<ChangeForm> {
   }
 
   void _signUp() {
-    // TODO::Firestoreにアカウント登録する
-    // firestoreに登録
-//      Firestore.instance.collection('acount').document(saveId).setData(data);
-    // firestoreから削除
-//      Firestore.instance.collection('acount').document(saveId).delete();
+    // Firestoreにアカウント登録する
+    if (this._formKey.currentState.validate()) {
+      this._formKey.currentState.save();
+      String saveId = this._id;
+      String savePw = this._password;
+      Map data = new Map<String, dynamic>.from({
+        "id": saveId,
+        "pw": savePw,
+      });
+
+      // firestoreに登録
+      Firestore.instance.collection('acount').document(saveId).setData(data);
+
+      Scaffold.of(context).showSnackBar(SnackBar(content: Text('アカウント登録完了！！')));
+    }
   }
 
   Future getData(String collection, String documentId) async {
@@ -229,20 +239,19 @@ class _ChangeFormState extends State<ChangeForm> {
   }
 
   void checkAcount(Map doc, String id, String password) {
-    _id_ok = false;
-    _pw_ok = false;
-    print(id);
-    print(password);
-    doc.forEach((key, value) => {
-          if (key == 'id')
-            {
-              if (value == id) {_id_ok = true}
-            }
-          else if (key == 'pw')
-            {
-              if (value == password) {_pw_ok = true}
-            }
-        });
+    doc.forEach((key, value) => checkIdPw(key, value, id, password));
+  }
+
+  void checkIdPw(String key, String value, String id, String password) {
+    if (key == 'id') {
+      if (value == id) {
+        _id_ok = true;
+      }
+    } else if (key == 'pw') {
+      if (value == password) {
+        _pw_ok = true;
+      }
+    }
   }
 }
 
@@ -302,11 +311,10 @@ class _SearchBookState extends State<SearchBook> {
   void _searchBook() {
     if (this._formkey.currentState.validate()) {
       this._formkey.currentState.save();
-//      Scaffold.of(context).showSnackBar(SnackBar(content: Text('検索しました')));
-      print(this._bookName);
       Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => BookFinderPage()),
+        context,
+        MaterialPageRoute(
+            builder: (context) => BookFinderPage(bookTitle: this._bookName)),
       );
     }
   }

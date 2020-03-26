@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-const url =
-    'https://www.googleapis.com/books/v1/volumes?q=flutter';
+const url = 'https://www.googleapis.com/books/v1/volumes?q=';
+const title = 'flutter';
 
 void main() => runApp(MyApp());
 
@@ -17,21 +17,25 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: BookFinderPage(),
+      home: BookFinderPage(bookTitle: title),
     );
   }
 }
 
 class BookFinderPage extends StatelessWidget {
+  final String bookTitle;
+
+  BookFinderPage({Key key, @required this.bookTitle}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Book Finder'),
+        title: Text('書籍検索結果'),
         leading: Icon(Icons.book),
       ),
       body: FutureBuilder(
-          future: _fetchPotterBooks(),
+          future: _fetchPotterBooks(this.bookTitle),
           builder: (context, AsyncSnapshot<List<Book>> snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
               if (snapshot.hasError) {
@@ -50,6 +54,7 @@ class BookFinderPage extends StatelessWidget {
 
 class BookTile extends StatelessWidget {
   final Book book;
+
   BookTile(this.book);
 
   @override
@@ -69,8 +74,10 @@ List<Book> _fetchBooks() {
   return List.generate(100, (i) => Book(title: 'Book $i', author: 'Author $i'));
 }
 
-Future<List<Book>> _fetchPotterBooks() async {
-  final res = await http.get(url);
+Future<List<Book>> _fetchPotterBooks(String bookTitle) async {
+  final String aurl = url + bookTitle;
+  print(aurl);
+  final res = await http.get(aurl);
   if (res.statusCode == 200) {
     return _parseBookJson(res.body);
   } else {
@@ -83,11 +90,12 @@ List<Book> _parseBookJson(String jsonStr) {
   final jsonList = (jsonMap['items'] as List);
   return jsonList
       .map((jsonBook) => Book(
-    title: jsonBook['volumeInfo']['title'],
-    author: (jsonBook['volumeInfo']['authors'] as List).join(', '),
-    thumbnailUrl: jsonBook['volumeInfo']['imageLinks']
-    ['smallThumbnail'],
-  ))
+            title: jsonBook['volumeInfo']['title'],
+//    author: (jsonBook['volumeInfo']['authors'] as List).isEmpty.join(', '),
+            author: jsonBook['volumeInfo']['authors'].toString(),
+            thumbnailUrl: jsonBook['volumeInfo']['imageLinks']
+                ['smallThumbnail'],
+          ))
       .toList();
 }
 
@@ -109,6 +117,7 @@ void _navigateToDetailsPage(Book book, BuildContext context) {
 
 class BookDetailsPage extends StatelessWidget {
   final Book book;
+
   BookDetailsPage(this.book);
 
   @override
@@ -125,6 +134,7 @@ class BookDetailsPage extends StatelessWidget {
 
 class BookDetails extends StatelessWidget {
   final Book book;
+
   BookDetails(this.book);
 
   @override
@@ -141,8 +151,16 @@ class BookDetails extends StatelessWidget {
             child: Text(book.author,
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
+          RaisedButton(
+            onPressed: _registBook,
+            child: Text("登録"),
+          ),
         ],
       ),
     );
+  }
+
+  void _registBook() {
+    print("Book Registed");
   }
 }
