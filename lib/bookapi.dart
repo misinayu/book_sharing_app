@@ -208,6 +208,8 @@ class _ChangeFormState extends State<ChangeForm> {
           context,
           MaterialPageRoute(builder: (context) => SearchBook()),
         );
+      } else {
+        Scaffold.of(context).showSnackBar(SnackBar(content: Text('ログインできませんでした。')));
       }
     }
   }
@@ -239,6 +241,8 @@ class _ChangeFormState extends State<ChangeForm> {
   }
 
   void checkAcount(Map doc, String id, String password) {
+    _id_ok = false;
+    _pw_ok = false;
     doc.forEach((key, value) => checkIdPw(key, value, id, password));
   }
 
