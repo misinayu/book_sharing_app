@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import 'book_list.dart';
+
 void main() => runApp(BookSharingApp());
 
 class BookSharingApp extends StatelessWidget {
@@ -45,10 +47,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _text = '';
-  String _id = '';
-  String _password = '';
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -138,6 +136,9 @@ class _ChangeFormState extends State<ChangeForm> {
   String _id = '';
   String _password = '';
 
+  bool _id_ok = false;
+  bool _pw_ok = false;
+
   Widget build(BuildContext context) {
     return Form(
         key: _formKey,
@@ -175,107 +176,150 @@ class _ChangeFormState extends State<ChangeForm> {
                   },
                 ),
                 RaisedButton(
-                  onPressed: _submission,
-                  child: Text('保存'),
-                )
+                  onPressed: _signIn,
+                  child: Text('Sign In'),
+                ),
+                RaisedButton(
+                  onPressed: _signUp,
+                  child: Text('Sign Up'),
+                ),
               ],
             )));
   }
 
-  void _submission() {
-//    if (this._formKey.currentState.validate()) {
-//      this._formKey.currentState.save();
-//      Scaffold
-//          .of(context)
-//          .showSnackBar(SnackBar(content: Text('Processing Data')));
-//      print(this._id);
-//      print(this._password);
-//    }
-    // TODO::ログイン機能
-    getData(this._id);
-
+  void _signIn() {
+    // ログイン機能
     if (this._formKey.currentState.validate()) {
       this._formKey.currentState.save();
+      String saveId = this._id;
+      String savePw = this._password;
+      Map data = new Map<String, dynamic>.from({
+        "id": saveId,
+        "pw": savePw,
+      });
+      // firestoreから取得
+      Future test = getData('acount', saveId);
+      test.then((context) => checkAcount(context, saveId, savePw));
+
+      if (_id_ok && _pw_ok) {
+        // login成功していたら別画面に遷移
+        print('Login Success!!');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SearchBook()),
+        );
+      } else {
+        Scaffold.of(context).showSnackBar(SnackBar(content: Text('ログインできませんでした。')));
+      }
     }
   }
 
-  Future getData(String documentId) async {
-    DocumentSnapshot documentSnapshot =
-        await Firestore.instance.collection('acount').document(this._id).get();
-    Map record = documentSnapshot.data;
-    if (record['id'] == this._id) {
-      return true;
-    } else {
-      return false;
+  void _signUp() {
+    // Firestoreにアカウント登録する
+    if (this._formKey.currentState.validate()) {
+      this._formKey.currentState.save();
+      String saveId = this._id;
+      String savePw = this._password;
+      Map data = new Map<String, dynamic>.from({
+        "id": saveId,
+        "pw": savePw,
+      });
+
+      // firestoreに登録
+      Firestore.instance.collection('acount').document(saveId).setData(data);
+
+      Scaffold.of(context).showSnackBar(SnackBar(content: Text('アカウント登録完了！！')));
+    }
+  }
+
+  Future getData(String collection, String documentId) async {
+    DocumentSnapshot docSnapshot = await Firestore.instance
+        .collection(collection)
+        .document(documentId)
+        .get();
+    return docSnapshot.data;
+  }
+
+  void checkAcount(Map doc, String id, String password) {
+    _id_ok = false;
+    _pw_ok = false;
+    doc.forEach((key, value) => checkIdPw(key, value, id, password));
+  }
+
+  void checkIdPw(String key, String value, String id, String password) {
+    if (key == 'id') {
+      if (value == id) {
+        _id_ok = true;
+      }
+    } else if (key == 'pw') {
+      if (value == password) {
+        _pw_ok = true;
+      }
     }
   }
 }
 
-//class NextPage extends StatefulWidget {
-//  FirebaseUser userData;
-//
-//  NextPage({Key key, this.userData}) : super(key: key);
-//
-//  @override
-//  _NextPageState createState() => _NextPageState(userData);
-//}
-//
-//class _NextPageState extends State<NextPage> {
-//  FirebaseUser userData;
-//  String name = "";
-//  String email;
-//  String photoUrl;
-//  final GoogleSignIn _googleSignIn = GoogleSignIn();
-//
-//  _NextPageState(FirebaseUser userData) {
-//    this.userData = userData;
-//    this.name = userData.displayName;
-//    this.email = userData.email;
-//    this.photoUrl = userData.photoUrl;
-//  }
-//
-//  Future<void> _handleSignOut() async {
-//    await FirebaseAuth.instance.signOut();
-//    try {
-//      await _googleSignIn.signOut();
-//    } catch (e) {
-//      print(e);
-//    }
-//    Navigator.pop(context);
-//  }
-//
-//  @override
-//  Widget build(BuildContext context) {
-//    return Scaffold(
-//      appBar: AppBar(
-//        title: Text("ユーザ情報表示"),
-//      ),
-//      body: Center(
-//        child: Column(
-//          mainAxisAlignment: MainAxisAlignment.center,
-//          children: <Widget>[
-//            Image.network(this.photoUrl),
-//            Text(
-//              this.name,
-//              style: TextStyle(
-//                fontSize: 24,
-//              ),
-//            ),
-//            Text(
-//              this.email,
-//              style: TextStyle(
-//                  fontSize: 24
-//              ),
-//            ),
-//            RaisedButton(
-//              child: Text('Sign Out Google'),
-//              onPressed: () {
-//                _handleSignOut().catchError((e) => print(e));
-//              },
-//            ),
-//          ],
-//        ),
-//      ),
-//    );
-//  }
-//}
+class SearchBook extends StatefulWidget {
+  @override
+  _SearchBookState createState() => _SearchBookState();
+}
+
+class _SearchBookState extends State<SearchBook> {
+  final _formkey = GlobalKey<FormState>();
+
+  String _bookName = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('書籍検索'),
+      ),
+      body: _buildSearchBody(context),
+    );
+  }
+
+  Widget _buildSearchBody(BuildContext context) {
+    return Form(
+        key: _formkey,
+        child: Container(
+          padding: const EdgeInsets.all(50.0),
+          child: Column(
+            children: <Widget>[
+              new TextFormField(
+                enabled: true,
+                maxLength: 20,
+                maxLengthEnforced: false,
+                obscureText: false,
+                autovalidate: false,
+                decoration: const InputDecoration(
+                  hintText: '検索したい本の名前を入力してください',
+                  labelText: '書籍名 *',
+                ),
+                validator: (String value) {
+                  return value.isEmpty ? '必須入力です' : null;
+                },
+                onSaved: (String value) {
+                  this._bookName = value;
+                },
+              ),
+              RaisedButton(
+                onPressed: _searchBook,
+                child: Text('検索'),
+              ),
+            ],
+          ),
+        ));
+  }
+
+  void _searchBook() {
+    if (this._formkey.currentState.validate()) {
+      this._formkey.currentState.save();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => BookFinderPage(bookTitle: this._bookName)),
+      );
+    }
+  }
+}
